@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Stub `claude -p` for tests. Answers by schema; behaviour comes from STUB_* variables.
+
+STUB_LOG       append "<model> <cwd>" per call
+STUB_INPUTS    folder: save each call's stdin as <n>.txt
+STUB_EXTRACT   auto (default: one finding on the first user message), none, bad, fail
+STUB_MERGE     create (default: one create citing the first finding), none, fail, cap,
+               or file:<path> - a JSON changes list where $ID0 is the first finding id
+STUB_CLAIM, STUB_SLUG, STUB_BODY   texts for auto/create
+STUB_TOKENS    input tokens to report (default 100)
+STUB_SLEEP     seconds to sleep before answering
+STUB_FAIL_FIRST  fail this many calls first (counted in STUB_COUNTER)
+STUB_TOUCH     a path to create during the call (to test what smoke detects)
+STUB_APPEND    "<path>|<text>": during a merge call, append a line to that file (an agent
+               editing the store between open and write)
+"""
+import json, os, re, sys, time
+
+args = sys.argv[1:]
+model = args[args.index("--model") + 1]
+schema = json.loads(args[args.index("--json-schema") + 1])
+stdin = sys.stdin.read()
+env = os.environ.get
+if env("STUB_LOG"):
+    with open(env("STUB_LOG"), "a") as f:
+        f.write(f"{model} {os.getcwd()}\n")
+if env("STUB_INPUTS"):
+    os.makedirs(env("STUB_INPUTS"), exist_ok=True)
+    n = len(os.listdir(env("STUB_INPUTS")))
+    with open(os.path.join(env("STUB_INPUTS"), f"{n:03d}.txt"), "w") as f:
+        f.write(stdin)
+if env("STUB_TOUCH"):
+    os.makedirs(os.path.dirname(env("STUB_TOUCH")), exist_ok=True)
+    open(env("STUB_TOUCH"), "w").close()
+if env("STUB_SLEEP"):
+    time.sleep(float(env("STUB_SLEEP")))
+if env("STUB_FAIL_FIRST"):
+    counter = env("STUB_COUNTER")
+    done = int(open(counter).read()) if os.path.exists(counter) else 0
+    open(counter, "w").write(str(done + 1))
+    if done < int(env("STUB_FAIL_FIRST")):
+        sys.exit("stub: planned failure")
+
+props = schema["properties"]
+if "ok" in props:
+    answer = {"ok": True}
+elif "findings" in props:
+    mode = env("STUB_EXTRACT", "auto")
+    if mode == "fail":
+        sys.exit("stub: extract fails")
+    first = re.search(r"^\[(\d+)\] user:", stdin, re.M)
+    if mode == "none" or not first:
+        answer = {"findings": []}
+    elif mode == "bad":
+        answer = {"findings": [{"slug": None, "kind": "project", "claim": "x", "msg": 999999}]}
+    else:
+        answer = {"findings": [{"slug": None, "kind": "project",
+                                "claim": env("STUB_CLAIM", "Stub fact from the session."),
+                                "msg": int(first.group(1))}]}
+else:
+    if env("STUB_APPEND"):
+        path, text = env("STUB_APPEND").split("|", 1)
+        with open(path, "a") as f:
+            f.write(text + "\n")
+    mode = env("STUB_MERGE", "create")
+    ids = re.findall(r"^- id: (\S+)", stdin, re.M)
+    if mode == "fail":
+        sys.exit("stub: merge fails")
+    if mode == "none" or (not ids and not mode.startswith("file:")):
+        changes = []
+    elif mode == "cap":
+        changes = [{"op": "create", "slug": f"cap-{i}", "kind": "project", "name": f"Cap {i}",
+                    "description": "d", "body": "b", "findings": [ids[0]]} for i in range(11)]
+    elif mode.startswith("file:"):
+        text = open(mode[5:]).read().replace("$ID0", ids[0] if ids else "")
+        changes = json.loads(text)
+    else:
+        changes = [{"op": "create", "slug": env("STUB_SLUG", "stub-fact"), "kind": "project",
+                    "name": "Stub fact", "description": "A fact the stub merge created",
+                    "body": env("STUB_BODY", "Stub fact."), "findings": [ids[0]]}]
+    answer = {"changes": changes}
+
+tokens = int(env("STUB_TOKENS", "100"))
+print(json.dumps({"type": "result", "subtype": "success", "is_error": False,
+                  "structured_output": answer, "usage": {"input_tokens": tokens}}))

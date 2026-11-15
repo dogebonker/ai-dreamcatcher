@@ -1,0 +1,7 @@
+{"type": "permission-mode", "permissionMode": "default", "sessionId": "00000006-aaaa-4bbb-8ccc-000000000006"}
+{"type": "attachment", "cwd": "@HOME@/work/app", "sessionId": "00000006-aaaa-4bbb-8ccc-000000000006", "attachment": {"type": "environment"}, "timestamp": "2026-11-14T09:00:00.000Z"}
+{"cwd": "@HOME@/work/app", "sessionId": "00000006-aaaa-4bbb-8ccc-000000000006", "timestamp": "2026-11-14T09:01:00.000Z", "uuid": "00000006-0001", "type": "user", "message": {"role": "user", "content": "What is 17 times 23?"}, "origin": {"kind": "human"}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000006-aaaa-4bbb-8ccc-000000000006", "timestamp": "2026-11-14T09:02:00.000Z", "uuid": "00000006-0002", "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "17 times 23 is 391."}]}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000006-aaaa-4bbb-8ccc-000000000006", "timestamp": "2026-11-14T09:03:00.000Z", "uuid": "00000006-0003", "type": "user", "message": {"role": "user", "content": "Thanks!"}, "origin": {"kind": "human"}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000006-aaaa-4bbb-8ccc-000000000006", "timestamp": "2026-11-14T09:04:00.000Z", "uuid": "00000006-0004", "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "You're welcome."}]}}
+{"type": "last-prompt", "lastPrompt": "", "sessionId": "00000006-aaaa-4bbb-8ccc-000000000006"}

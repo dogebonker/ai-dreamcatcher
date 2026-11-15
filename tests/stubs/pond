@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Stub `pond` for tests. Serves $POND_STORAGE_PATH/pond.json:
+
+{"fail": false,              every command fails
+ "fail_on": "search",        only `search` fails, or "messages": record pages fail after
+ "pages_ok": 1,              this many have succeeded (listing reads them first, then render)
+ "rows_then_fail": false,    record pages print their rows, then fail
+ "sessions": [{"session_id", "source_agent", "project", "project_dir", "source", "originator",
+               "no_ordinal": 0, "file": absolute path of the agent's session file}],
+ "search": [{"session_id", "project", "source_agent", "matches": [{"text", ...}]}]}
+
+Each call is logged to $POND_STORAGE_PATH/calls.log as its subcommand, and each search to
+search.log as JSON with its query, --project and --from-date.
+Records come from the session files: Claude Code line numbers, Codex ordinal = line - 1
+without the session_meta line, as the real pond stores them. Like the real pond, search
+rejects an empty query and a --from-date that is not YYYY-MM-DD, and honours --limit.
+"""
+import datetime, json, os, re, sys
+
+store = os.environ.get("POND_STORAGE_PATH")
+if not store or not os.environ.get("POND_CONFIG_FILE"):
+    sys.exit("stub pond: POND_STORAGE_PATH and POND_CONFIG_FILE must be set")
+data = json.load(open(os.path.join(store, "pond.json")))
+args = sys.argv[1:]
+with open(os.path.join(store, "calls.log"), "a") as f:
+    f.write(args[0] + "\n")
+if data.get("fail") or data.get("fail_on") == args[0]:
+    sys.exit("stub pond: down")
+sessions = {s["session_id"]: s for s in data.get("sessions", [])}
+
+def records(s):
+    out = []
+    for i, line in enumerate(open(s["file"]).read().split("\n"), start=1):
+        if not line.strip():
+            continue
+        rec = json.loads(line)
+        if s["source_agent"] == "codex-cli":
+            if rec.get("type") == "session_meta":
+                continue
+            out.append((i - 1, line))
+        else:
+            out.append((i, line))
+    return out
+
+def newest(s):
+    ts = [json.loads(l).get("timestamp") for _, l in records(s)]
+    ts = [t for t in ts if t]
+    return max(ts) if ts else None
+
+def facts(s):
+    typed, last = 0, None
+    for n, line in records(s):
+        r = json.loads(line)
+        human = (r.get("origin") or {}).get("kind") == "human" \
+            or ((r.get("attachment") or {}).get("origin") or {}).get("kind") == "human" \
+            or ((r.get("payload") or {}).get("item") or {}).get("type") == "UserMessage"
+        typed += int(human)
+        if r.get("type") in ("user", "assistant", "attachment", "event_msg", "response_item"):
+            last = n if last is None else max(last, n)
+    codex = s["source_agent"] == "codex-cli"
+    return {"id": s["session_id"], "typed": typed, "line": None if codex else last,
+            "ordinal": last if codex else None}
+
+def emit(rows):
+    for r in rows:
+        print(json.dumps(r))
+
+def opt(name, default=None):
+    return args[args.index(name) + 1] if name in args else default
+
+if args[0] == "status":
+    print("stub pond: ok")
+elif args[0] == "search":
+    query, since = args[1], opt("--from-date")
+    with open(os.path.join(store, "search.log"), "a") as f:
+        f.write(json.dumps({"query": query, "project": opt("--project"), "from": since}) + "\n")
+    error = None
+    if not query.strip():
+        error = "query must be non-empty after trim"
+    else:
+        try:
+            datetime.date.fromisoformat(since)
+        except (TypeError, ValueError):
+            error = "filters.from_date must be in YYYY-MM-DD format"
+    if error:
+        print(json.dumps({"error": {"code": "validation_failed", "message": error}}))
+        sys.exit(1)
+    hits = data.get("search", [])[: int(opt("--limit", "10"))]
+    print(json.dumps({"sessions": hits, "has_more": False}))
+elif args[0] == "sql":
+    sql = args[-1]
+    m = re.search(r"FROM messages WHERE session_id = '([^']+)' AND (.+?) > (-?\d+)", sql)
+    if m:
+        pages = os.path.join(store, "pages.log")
+        with open(pages, "a") as f:
+            f.write("page\n")
+        if data.get("fail_on") == "messages" and len(open(pages).read().split()) > data.get("pages_ok", 1):
+            sys.exit("stub pond: down")
+        s = sessions.get(m.group(1))
+        after = int(m.group(3))
+        rows = [r for r in (records(s) if s else []) if r[0] > after][:500]
+        emit({"n": n, "r": line} for n, line in rows)
+        if data.get("rows_then_fail"):
+            sys.exit("stub pond: failed after printing rows")
+    elif "FROM sessions WHERE session_id" in sql:
+        s = sessions.get(re.search(r"session_id = '([^']+)'", sql).group(1))
+        if s:
+            emit([{"source": json.dumps(s.get("source")), "originator": s.get("originator"),
+                   "project": s.get("project")}])
+    elif "AS dir, project, created_at" in sql:
+        emit({"dir": s.get("project_dir"), "project": s.get("project"), "created_at": newest(s)}
+             for s in sessions.values() if s["source_agent"] == "claude-code")
+    elif "AS typed" in sql:
+        ids = re.findall(r"'([0-9a-f-]+)'", sql.split("session_id IN (")[1])
+        emit(facts(sessions[i]) for i in ids if i in sessions)
+    elif "session_id IN (" in sql:
+        ids = re.findall(r"'([0-9a-f-]+)'", sql.split("session_id IN (")[1])
+        emit({"id": i, "dir": sessions[i].get("project_dir"), "newest": newest(sessions[i])}
+             for i in ids if i in sessions)
+    elif "AS newest" in sql:
+        start = re.search(r"m.timestamp > '([^']+)'", sql).group(1)
+        rows = []
+        for s in sessions.values():
+            t = newest(s)
+            if t and t[:19] > start[:19]:
+                rows.append({"id": s["session_id"], "agent": s["source_agent"], "project": s.get("project"),
+                             "dir": s.get("project_dir"), "src": json.dumps(s.get("source")), "newest": t,
+                             "no_ordinal": s.get("no_ordinal", 0)})
+        emit(rows)
+    else:
+        sys.exit("stub pond: unknown query")
+else:
+    sys.exit("stub pond: unknown command")

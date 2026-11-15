@@ -1,0 +1,7 @@
+{"type": "permission-mode", "permissionMode": "default", "sessionId": "00000003-aaaa-4bbb-8ccc-000000000003"}
+{"type": "attachment", "cwd": "@HOME@/work/app", "sessionId": "00000003-aaaa-4bbb-8ccc-000000000003", "attachment": {"type": "environment"}, "timestamp": "2026-11-14T09:00:00.000Z"}
+{"cwd": "@HOME@/work/app", "sessionId": "00000003-aaaa-4bbb-8ccc-000000000003", "timestamp": "2026-11-14T09:01:00.000Z", "uuid": "00000003-0001", "type": "user", "message": {"role": "user", "content": "The API server listens on port 8080."}, "origin": {"kind": "human"}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000003-aaaa-4bbb-8ccc-000000000003", "timestamp": "2026-11-14T09:02:00.000Z", "uuid": "00000003-0002", "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "OK, the API port is 8080."}]}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000003-aaaa-4bbb-8ccc-000000000003", "timestamp": "2026-11-14T09:03:00.000Z", "uuid": "00000003-0003", "type": "user", "message": {"role": "user", "content": "Keep that in mind for the proxy config."}, "origin": {"kind": "human"}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000003-aaaa-4bbb-8ccc-000000000003", "timestamp": "2026-11-14T09:04:00.000Z", "uuid": "00000003-0004", "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Will do."}]}}
+{"type": "last-prompt", "lastPrompt": "", "sessionId": "00000003-aaaa-4bbb-8ccc-000000000003"}

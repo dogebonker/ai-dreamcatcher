@@ -1,0 +1,23 @@
+{
+  "selected": 2,
+  "ops": {
+    "create": [
+      0,
+      0
+    ],
+    "update": [
+      1,
+      1
+    ],
+    "delete": [
+      0,
+      0
+    ]
+  },
+  "contains": [
+    "CONFLICT:"
+  ],
+  "lacks": [],
+  "state_lacks": [],
+  "count": {}
+}

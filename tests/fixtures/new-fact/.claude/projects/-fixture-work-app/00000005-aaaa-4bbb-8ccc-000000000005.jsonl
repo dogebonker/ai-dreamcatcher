@@ -1,0 +1,7 @@
+{"type": "permission-mode", "permissionMode": "default", "sessionId": "00000005-aaaa-4bbb-8ccc-000000000005"}
+{"type": "attachment", "cwd": "@HOME@/work/app", "sessionId": "00000005-aaaa-4bbb-8ccc-000000000005", "attachment": {"type": "environment"}, "timestamp": "2026-11-14T09:00:00.000Z"}
+{"cwd": "@HOME@/work/app", "sessionId": "00000005-aaaa-4bbb-8ccc-000000000005", "timestamp": "2026-11-14T09:01:00.000Z", "uuid": "00000005-0001", "type": "user", "message": {"role": "user", "content": "From now on the test suite runs with `just test`, not `npm test`."}, "origin": {"kind": "human"}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000005-aaaa-4bbb-8ccc-000000000005", "timestamp": "2026-11-14T09:02:00.000Z", "uuid": "00000005-0002", "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Got it: tests run with `just test`."}]}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000005-aaaa-4bbb-8ccc-000000000005", "timestamp": "2026-11-14T09:03:00.000Z", "uuid": "00000005-0003", "type": "user", "message": {"role": "user", "content": "Good. That applies to every package in the repo."}, "origin": {"kind": "human"}}
+{"cwd": "@HOME@/work/app", "sessionId": "00000005-aaaa-4bbb-8ccc-000000000005", "timestamp": "2026-11-14T09:04:00.000Z", "uuid": "00000005-0004", "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Understood, `just test` for all packages."}]}}
+{"type": "last-prompt", "lastPrompt": "", "sessionId": "00000005-aaaa-4bbb-8ccc-000000000005"}

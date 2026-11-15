@@ -1,0 +1,23 @@
+{
+  "selected": 1,
+  "ops": {
+    "create": [
+      0,
+      0
+    ],
+    "update": [
+      1,
+      1
+    ],
+    "delete": [
+      1,
+      1
+    ]
+  },
+  "contains": [
+    "make ship"
+  ],
+  "lacks": [],
+  "state_lacks": [],
+  "count": {}
+}

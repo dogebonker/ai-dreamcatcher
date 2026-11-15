@@ -1,0 +1,7 @@
+#!/bin/sh
+# Stub `pmset -g batt`: AC power unless STUB_BATTERY is set.
+if [ -n "$STUB_BATTERY" ]; then
+  echo "Now drawing from 'Battery Power'"
+else
+  echo "Now drawing from 'AC Power'"
+fi

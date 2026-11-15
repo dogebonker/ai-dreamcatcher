@@ -1,0 +1,5 @@
+{"t": "2026-11-13T08:00:00Z", "ev": "attempt", "run": "20261113T080000Z", "scope": "-fixture-work-app", "session": "claude:00000012-aaaa-4bbb-8ccc-000000000012", "records": 7}
+{"t": "2026-11-13T08:01:00Z", "ev": "extracted", "run": "20261113T080000Z", "scope": "-fixture-work-app", "session": "claude:00000012-aaaa-4bbb-8ccc-000000000012"}
+{"t": "2026-11-13T08:02:00Z", "ev": "applied", "run": "20261113T080000Z", "scope": "-fixture-work-app", "op": "create", "slug": "package-manager", "description": "Which package manager the repo uses", "sources": ["claude:00000012-aaaa-4bbb-8ccc-000000000012#1"]}
+{"t": "2026-11-13T08:02:00Z", "ev": "consumed", "run": "20261113T080000Z", "scope": "-fixture-work-app", "session": "claude:00000012-aaaa-4bbb-8ccc-000000000012", "records": 7}
+{"t": "2026-11-13T08:02:00Z", "ev": "done", "run": "20261113T080000Z", "scope": "-fixture-work-app"}
