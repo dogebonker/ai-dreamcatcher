@@ -148,7 +148,7 @@ exec::run(cmd: &mut Command, stdin: Option<&str>, timeout: Duration) -> Result<S
 |---|---|
 | `init [--source pond\|files]` | Writes `config.json` with the absolute path of `claude`, the path of `pond` if it is installed, and the source (`pond` when `pond status` succeeds, else `files`), runs `smoke`, prints scopes and the launchd entry. Installs nothing. `init --source files` works without `pond`. |
 | `run [--dry-run]` | One tick. `--dry-run` makes the model calls, prints the plan, writes nothing. Exit 0 done, busy, on battery or nothing due. 1 a scope run failed or the source was down. 2 usage or not initialised. |
-| `status` | Source and its last failure, scopes with skip reasons, pending, unmapped and given-up sessions, other window sessions with the rule they fail, last `done` per scope, dropped changes, notes matching the secret screen, and with `Pond` the count of Codex rows that have no `ordinal` (never read). |
+| `status` | Source and its last failure, scopes with skip reasons, pending, unmapped and given-up sessions, other window sessions with the rule they fail, last `done` per scope, dropped changes, notes matching the secret screen, and with `Pond` the count of candidate Codex sessions whose rows have no `ordinal` (never read). |
 | `log [<run>]` | The digest: per run and scope, each applied change with op, note, description and sources, plus the undo command. |
 | `undo <run>` | Reverts that run's changes, as a run of its own. |
 | `retry <ref>` | Appends a `retry` event that clears a given-up session's strikes. |

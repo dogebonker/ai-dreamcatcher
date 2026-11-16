@@ -516,7 +516,7 @@ fn status() -> Out {
     };
     if matches!(source, Source::Pond(_)) {
         println!(
-            "codex rows in pond without an ordinal (older format, never read): {}",
+            "codex sessions in pond without an ordinal (older format, never read): {}",
             listing.codex_without_ordinal
         );
     }

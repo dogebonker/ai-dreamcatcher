@@ -6,7 +6,7 @@
  "pages_ok": 1,              this many have succeeded (listing reads them first, then render)
  "rows_then_fail": false,    record pages print their rows, then fail
  "sessions": [{"session_id", "source_agent", "project", "project_dir", "source", "originator",
-               "no_ordinal": 0, "file": absolute path of the agent's session file}],
+               "no_ordinal": false, "file": absolute path of the agent's session file}],
  "search": [{"session_id", "project", "source_agent", "matches": [{"text", ...}]}]}
 
 Each call is logged to $POND_STORAGE_PATH/calls.log as its subcommand, and each search to
@@ -58,8 +58,9 @@ def facts(s):
         if r.get("type") in ("user", "assistant", "attachment", "event_msg", "response_item"):
             last = n if last is None else max(last, n)
     codex = s["source_agent"] == "codex-cli"
+    # "no_ordinal": a Codex session pond holds in the older format, without ordinals.
     return {"id": s["session_id"], "typed": typed, "line": None if codex else last,
-            "ordinal": last if codex else None}
+            "ordinal": last if codex and not s.get("no_ordinal") else None}
 
 def emit(rows):
     for r in rows:
@@ -124,8 +125,7 @@ elif args[0] == "sql":
             t = newest(s)
             if t and t[:19] > start[:19]:
                 rows.append({"id": s["session_id"], "agent": s["source_agent"], "project": s.get("project"),
-                             "dir": s.get("project_dir"), "src": json.dumps(s.get("source")), "newest": t,
-                             "no_ordinal": s.get("no_ordinal", 0)})
+                             "dir": s.get("project_dir"), "src": json.dumps(s.get("source")), "newest": t})
         emit(rows)
     else:
         sys.exit("stub pond: unknown query")

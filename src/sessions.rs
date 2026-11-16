@@ -242,7 +242,7 @@ pub struct Listing {
     pub mapped: HashSet<String>,
     /// Mapped window sessions not read in full: ref, scope, and why.
     pub skipped: Vec<(String, String, &'static str)>,
-    /// Codex rows pond holds without an `ordinal` (an older format), in the window. They are
+    /// Codex candidate sessions whose pond rows carry no `ordinal` (an older format). They are
     /// never read.
     pub codex_without_ordinal: u64,
 }
@@ -427,7 +427,6 @@ pub fn list(
         changed: Time,
     }
     let mut candidates = Vec::new();
-    let mut codex_without_ordinal = 0;
     let idle = match source {
         Source::Files => {
             for (agent, id, path) in files() {
@@ -464,14 +463,11 @@ pub fn list(
                 dir: Option<String>,
                 src: Option<String>,
                 newest: String,
-                no_ordinal: Option<u64>,
             }
             let sql = format!(
                 "SELECT s.session_id AS id, s.source_agent AS agent, s.project AS project, \
                  json_get_string(s.options, 'source', 'project_dir') AS dir, \
-                 json_extract(s.options, '$.source.source') AS src, max(m.timestamp) AS newest, \
-                 sum(CASE WHEN s.source_agent = 'codex-cli' AND \
-                 json_get_int(m.options, 'source', 'raw_record', 'ordinal') IS NULL THEN 1 ELSE 0 END) AS no_ordinal \
+                 json_extract(s.options, '$.source.source') AS src, max(m.timestamp) AS newest \
                  FROM sessions s JOIN messages m ON m.session_id = s.session_id \
                  WHERE (s.parent_session_id IS NULL OR s.parent_session_id = '') \
                  AND s.source_agent IN ('claude-code', 'codex-cli') AND m.timestamp > '{}' \
@@ -487,7 +483,6 @@ pub fn list(
                     _ => Agent::Codex,
                 };
                 let top = agent == Agent::Claude || row.src.is_some_and(|s| s.starts_with('"'));
-                codex_without_ordinal += row.no_ordinal.unwrap_or(0);
                 candidates.push(Candidate {
                     agent,
                     id: row.id,
@@ -501,10 +496,7 @@ pub fn list(
             IDLE_POND
         }
     };
-    let mut out = Listing {
-        codex_without_ordinal,
-        ..Listing::default()
-    };
+    let mut out = Listing::default();
     let prefix = |a: Agent| {
         if a == Agent::Claude {
             "claude"
@@ -553,7 +545,10 @@ pub fn list(
     };
     for (c, reference, scope) in check {
         let consumed = seen.consumed.get(&reference).map_or(0, |c| c.0);
-        if let Some((typed, last)) = facts.get(&c.id) {
+        if let Some((typed, last, ordinal)) = facts.get(&c.id) {
+            // ponytail: counted only among candidates that reach the facts query; a full count
+            // costs minutes on a large pond.
+            out.codex_without_ordinal += u64::from(c.agent == Agent::Codex && !ordinal);
             let why = if *typed < 2 {
                 Some("fewer than 2 typed messages")
             } else if *last <= consumed {
@@ -585,8 +580,9 @@ pub fn list(
 
 /// Per session id: a lower bound of its typed messages (any record of human origin, or a
 /// Codex `UserMessage` item), and its highest record number among record types the parser
-/// renders (Claude Code `source.line`, Codex `ordinal + 1`, D22).
-fn pond_facts(bin: &Path, ids: &[&str]) -> Result<HashMap<String, (u64, u64)>, Error> {
+/// renders (Claude Code `source.line`, Codex `ordinal + 1`, D22), and whether any row has an
+/// `ordinal`.
+fn pond_facts(bin: &Path, ids: &[&str]) -> Result<HashMap<String, (u64, u64, bool)>, Error> {
     #[derive(Deserialize)]
     struct Row {
         id: String,
@@ -617,7 +613,10 @@ fn pond_facts(bin: &Path, ids: &[&str]) -> Result<HashMap<String, (u64, u64)>, E
         let row: Row = serde_json::from_str(&line)
             .map_err(|e| Error::SourceDown(format!("pond sql: unexpected row: {e}")))?;
         let last = row.line.or(row.ordinal.map(|o| o + 1)).unwrap_or(0);
-        out.insert(row.id, (row.typed.unwrap_or(0), last));
+        out.insert(
+            row.id,
+            (row.typed.unwrap_or(0), last, row.ordinal.is_some()),
+        );
     }
     Ok(out)
 }

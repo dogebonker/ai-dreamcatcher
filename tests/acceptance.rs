@@ -1548,8 +1548,7 @@ fn pond_does_not_read_sessions_that_cannot_be_pending() {
     let storage = h.dir.parent().unwrap().join("pond");
     fs::write(
         storage.join("pond.json"),
-        serde_json::json!({"sessions": [pond_session(&uuid(1), &cwd, &file)], "no_ordinal": 0})
-            .to_string(),
+        serde_json::json!({"sessions": [pond_session(&uuid(1), &cwd, &file)]}).to_string(),
     )
     .unwrap();
     h.ok(&["init", "--source", "pond"], 0);
@@ -1557,32 +1556,57 @@ fn pond_does_not_read_sessions_that_cannot_be_pending() {
     let out = h.ok(&["status"], 0);
     assert!(out.contains("fewer than 2 typed messages"), "{out}");
     assert!(
-        out.contains("codex rows in pond without an ordinal (older format, never read): 0"),
+        out.contains("codex sessions in pond without an ordinal (older format, never read): 0"),
         "{out}"
     );
     // scopes, list and facts: three queries, and no record page.
     assert_eq!(log_lines(&storage.join("calls.log")).len(), 3);
 }
 
-/// O2: `status` reports Codex pond rows without an ordinal.
+/// O2: `status` counts Codex sessions pond holds without an `ordinal`, from the facts query
+/// on candidates (no scan of every window message).
 #[test]
-fn status_reports_codex_rows_without_ordinal() {
+fn status_reports_codex_sessions_without_ordinal() {
     let h = pond_home(serde_json::json!([]), serde_json::json!([]));
-    let cwd = h.dir.join("work/app").to_string_lossy().into_owned();
+    let repo = h.dir.join("work/app");
+    git_repo(&repo);
+    let cwd = repo.to_string_lossy().into_owned();
     notes(&h, SCOPE, &[("a", "A.")]);
-    let file = session(&h, SCOPE, &uuid(1), &cwd, &["one"]);
-    let mut row = pond_session(&uuid(1), &cwd, &file);
-    row["no_ordinal"] = 7.into();
+    let claude = session(&h, SCOPE, &uuid(1), &cwd, &["one"]);
+    let id = "0000000c-aaaa-7bbb-8ccc-00000000000c";
+    let codex = h.dir.join(format!(
+        ".codex/sessions/2026/11/14/rollout-2026-11-14T09-00-00-{id}.jsonl"
+    ));
+    fs::create_dir_all(codex.parent().unwrap()).unwrap();
+    let records = [
+        serde_json::json!({"timestamp": "2026-11-14T09:00:00.000Z", "type": "session_meta", "payload": {"cwd": cwd, "source": "cli", "originator": "codex-tui"}}),
+        serde_json::json!({"timestamp": "2026-11-14T09:01:00.000Z", "type": "event_msg", "payload": {"type": "item_completed", "item": {"type": "UserMessage", "content": [{"type": "text", "text": "one"}]}}}),
+        serde_json::json!({"timestamp": "2026-11-14T09:02:00.000Z", "type": "event_msg", "payload": {"type": "item_completed", "item": {"type": "UserMessage", "content": [{"type": "text", "text": "two"}]}}}),
+    ];
+    fs::write(
+        &codex,
+        records.iter().map(|r| format!("{r}\n")).collect::<String>(),
+    )
+    .unwrap();
+    h.age_files(2 * 3_600);
+    let codex_row = serde_json::json!({"session_id": id, "source_agent": "codex-cli", "project": cwd,
+        "source": "cli", "originator": "codex-tui", "no_ordinal": true, "file": codex});
     let storage = h.dir.parent().unwrap().join("pond");
     fs::write(
         storage.join("pond.json"),
-        serde_json::json!({"sessions": [row]}).to_string(),
+        serde_json::json!({"sessions": [pond_session(&uuid(1), &cwd, &claude), codex_row]})
+            .to_string(),
     )
     .unwrap();
     h.ok(&["init", "--source", "pond"], 0);
+    let config = h.dir.join(".config/ai-dreamcatcher/config.json");
+    let mut c: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&config).unwrap()).unwrap();
+    c["cross_provider"] = serde_json::json!([SCOPE]);
+    fs::write(&config, c.to_string()).unwrap();
     assert!(
         h.ok(&["status"], 0)
-            .contains("without an ordinal (older format, never read): 7")
+            .contains("codex sessions in pond without an ordinal (older format, never read): 1")
     );
 }
 
