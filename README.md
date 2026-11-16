@@ -1,6 +1,20 @@
-# ai-dreamcatcher
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/dreamcatcher-light.png">
+    <img src="assets/dreamcatcher-dark.png" alt="ai-dreamcatcher logo" width="168">
+  </picture>
+</p>
 
-Your coding agents forget, repeat themselves and keep stale facts. `dreamcatcher` cleans their memory while you sleep.
+<h1 align="center">ai-dreamcatcher</h1>
+
+<p align="center">
+  Your coding agents forget, repeat themselves and keep stale facts.<br>
+  <code>dreamcatcher</code> cleans their memory while you sleep.
+</p>
+
+<p align="center">
+  <a href="#install">Install</a>&nbsp;&nbsp;&nbsp;<a href="#use">Use</a>&nbsp;&nbsp;&nbsp;<a href="#safety">Safety</a>&nbsp;&nbsp;&nbsp;<a href="docs/design.md">Design</a>
+</p>
 
 Once an hour it reads the sessions your agents finished, then rewrites the Claude Code memory of that project: duplicates merged, corrected values replaced, new facts added. Every change cites the session it came from, shows up in a digest, and can be undone byte for byte for 30 days.
 
