@@ -558,6 +558,24 @@ fn ac13_call_and_try_caps() {
     }
 }
 
+/// A failed merge logs claude's status and stderr, redacted, never its stdout (G5).
+#[test]
+fn merge_failure_output_carries_no_session_text() {
+    let mut h = one_scope(1);
+    h.set("STUB_MERGE", "fail");
+    h.init_files();
+    let out = h.run(&["run"]);
+    assert_eq!(out.status.code(), Some(1));
+    let all = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(all.contains("merge failed"), "{all}");
+    assert!(!all.contains("PRIVATE-SESSION-TEXT"), "{all}");
+    assert_eq!(h.events("aborted", RUN)[0]["reason"], "merge");
+}
+
 /// AC14: a session from a worktree or a subdirectory maps to the repository's scope; one in
 /// a non-git folder maps only to its own folder's scope.
 #[test]

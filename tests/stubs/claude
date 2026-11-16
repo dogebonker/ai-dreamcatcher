@@ -65,6 +65,7 @@ else:
     mode = env("STUB_MERGE", "create")
     ids = re.findall(r"^- id: (\S+)", stdin, re.M)
     if mode == "fail":
+        print("PRIVATE-SESSION-TEXT echoed by the model")
         sys.exit("stub: merge fails")
     if mode == "none" or (not ids and not mode.startswith("file:")):
         changes = []

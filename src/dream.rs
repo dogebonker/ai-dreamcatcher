@@ -165,7 +165,10 @@ pub fn merge<T, E: std::fmt::Display>(
             Error(format!("invalid: {e}"))
         })
     });
-    result.map_err(|e| MergeFailed { cap, reason: e.0 })
+    result.map_err(|e| MergeFailed {
+        cap,
+        reason: failure(&e),
+    })
 }
 
 /// One small call. Fails above 2,000 input tokens, or if the call leaves a session file or a

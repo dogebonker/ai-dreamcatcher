@@ -759,6 +759,10 @@ pub fn replace(path: &Path, bytes: &[u8]) -> Result<()> {
         .unwrap_or_default();
     let tmp = path.with_file_name(format!(".{name}.dc-tmp"));
     let mut f = File::create(&tmp)?;
+    // The replacement keeps the file's mode, so a note made private stays private.
+    if let Ok(meta) = fs::metadata(path) {
+        f.set_permissions(meta.permissions())?;
+    }
     f.write_all(bytes)?;
     f.sync_all()?;
     fs::rename(&tmp, path)?;
@@ -989,6 +993,18 @@ mod tests {
             auto_dream: None,
             consolidated: None,
         }
+    }
+
+    #[test]
+    fn replace_keeps_the_file_mode() {
+        use std::os::unix::fs::PermissionsExt;
+        let s = store("mode", &[("a.md", b"old")]);
+        let path = s.dir.join("a.md");
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        replace(&path, b"new").unwrap();
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!((fs::read(&path).unwrap(), mode), (b"new".to_vec(), 0o600));
+        let _ = fs::remove_dir_all(&s.dir);
     }
 
     #[test]
